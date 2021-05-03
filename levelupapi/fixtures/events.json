@@ -1,0 +1,30 @@
+[
+    {
+        "model": "levelupapi.event",
+        "pk": 1,
+        "fields": {
+            "date": "2006-10-25",
+            "game": 3,
+            "host":1
+        }
+    },
+    {
+        "model": "levelupapi.event",
+        "pk": 2,
+        "fields": {
+            "date": "2006-1-25",
+            "game": 2,
+            "host":1
+
+        }
+    },
+    {
+        "model": "levelupapi.event",
+        "pk": 3,
+        "fields": {
+            "date": "2006-9-25",
+            "game": 1,
+            "host":1
+        }
+    }
+]
