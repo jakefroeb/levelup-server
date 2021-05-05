@@ -63,7 +63,7 @@ class Games(ViewSet):
             #
             # The `2` at the end of the route becomes `pk`
             game = Game.objects.get(pk=pk)
-            serializer = GameSerializer(game, context={'request': request})
+            serializer = SingleGameSerializer(game, context={'request': request})
             return Response(serializer.data)
         except Exception as ex:
             return HttpResponseServerError(ex)
@@ -127,6 +127,20 @@ class Games(ViewSet):
         serializer = GameSerializer(
             games, many=True, context={'request': request})
         return Response(serializer.data)
+    def update(self, request, pk=None):
+        """Handle PUT requests for a game
+        Returns:
+            Response -- Empty body with 204 status code
+        """
+        gamer = Gamer.objects.get(user=request.auth.user)
+        game = Game.objects.get(pk=pk)
+        game.name = request.data["name"]
+        game.gamer = gamer
+        game_type = Game_Type.objects.get(pk=request.data["gameTypeId"])
+        game.game_type = game_type
+        game.save()
+
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
 
 class GameSerializer(serializers.ModelSerializer):
     """JSON serializer for games
@@ -138,3 +152,8 @@ class GameSerializer(serializers.ModelSerializer):
         model = Game
         fields = ('id', 'name','game_type')
         depth = 1
+class SingleGameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = ('id', 'name', 'game_type_id')
+
