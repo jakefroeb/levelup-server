@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
 from levelupapi.models import Game, Game_Type, Gamer
+from django.db.models import Count, Q
 
 
 class Games(ViewSet):
@@ -62,7 +63,8 @@ class Games(ViewSet):
             #   http://localhost:8000/games/2
             #
             # The `2` at the end of the route becomes `pk`
-            game = Game.objects.get(pk=pk)
+            game = Game.objects.get(pk=pk).aggregate(even_count=Count('event'))
+            game = Game.objects.annotate(user_event_count=Count('event', filter=Q(event__host=gamer)))
             serializer = SingleGameSerializer(game, context={'request': request})
             return Response(serializer.data)
         except Exception as ex:
@@ -113,8 +115,8 @@ class Games(ViewSet):
         Returns:
             Response -- JSON serialized list of games
         """
-        # Get all game records from the database
-        games = Game.objects.all()
+        gamer = Gamer.objects.get(user=request.auth.user)
+        games = Game.objects.annotate(event_count=Count('event'), user_event_count=Count('event', filter=Q(event__host=gamer)))
 
         # Support filtering games by type
         #    http://localhost:8000/games?type=1
@@ -150,10 +152,10 @@ class GameSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Game
-        fields = ('id', 'name','game_type')
+        fields = ('id', 'name','game_type', 'event_count', 'user_event_count')
         depth = 1
 class SingleGameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
-        fields = ('id', 'name', 'game_type_id')
+        fields = ('id', 'name', 'game_type_id', 'event_count', 'user_event_count')
 

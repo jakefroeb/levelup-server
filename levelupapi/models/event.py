@@ -14,3 +14,11 @@ class Event(models.Model):
     @joined.setter
     def joined(self, value):
         self.__joined = value
+    
+    @property
+    def player_count(self):
+        return self.__player_count
+
+    @player_count.setter
+    def player_count(self, value):
+        self.__player_count = value
