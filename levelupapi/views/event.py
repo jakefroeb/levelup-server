@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from rest_framework import serializers
 from levelupapi.models import Game, Event, Gamer, Event_User
 from levelupapi.views.game import GameSerializer
+from django.db.models import Count, Q
+
 
 
 class Events(ViewSet):
@@ -103,7 +105,7 @@ class Events(ViewSet):
             Response -- JSON serialized game instance
         """
         try:
-            event = Event.objects.get(pk=pk)
+            event = Event.objects.get(pk=pk).annotate(player_count=Count('event_user'))
             serializer = EventSerializer(event, context={'request': request})
             return Response(serializer.data)
         except Exception:
@@ -152,22 +154,13 @@ class Events(ViewSet):
         """
         # Get the current authenticated user
         gamer = Gamer.objects.get(user=request.auth.user)
-        events = Event.objects.all()
-
-        # Set the `joined` property on every event
+        events = Event.objects.annotate(player_count=Count('event_user'), joined = Count('event_user', filter=Q(event_user__gamer=gamer)))
         for event in events:
-            event.joined = None
-
-            try:
-                Event_User.objects.get(event=event, gamer=gamer)
-                event.joined = True
-            except Event_User.DoesNotExist:
-                event.joined = False
-
+            event.joined = bool(event.joined)
         # Support filtering events by game
         game = self.request.query_params.get('gameId', None)
         if game is not None:
-            events = events.filter(game__id=type)
+            events = events.filter(game__id=game)
 
         serializer = EventSerializer(
             events, many=True, context={'request': request})
@@ -196,7 +189,7 @@ class EventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ('id', 'game', 'host', 'date', 'joined')
+        fields = ('id', 'game', 'host', 'date', 'joined','player_count')
 
 class GameSerializer(serializers.ModelSerializer):
     """JSON serializer for games"""
