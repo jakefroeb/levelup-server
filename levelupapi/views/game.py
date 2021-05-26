@@ -41,15 +41,13 @@ class Games(ViewSet):
         try:
             game.save()
             serializer = GameSerializer(game, context={'request': request})
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         # If anything went wrong, catch the exception and
         # send a response with a 400 status code to tell the
         # client that something was wrong with its request data
         except ValidationError as ex:
             return Response({"reason": ex.message}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
     def retrieve(self, request, pk=None):
         """Handle GET requests for single game
@@ -63,10 +61,14 @@ class Games(ViewSet):
             #   http://localhost:8000/games/2
             #
             # The `2` at the end of the route becomes `pk`
-            game = Game.objects.get(pk=pk).aggregate(even_count=Count('event'))
-            game = Game.objects.annotate(user_event_count=Count('event', filter=Q(event__host=gamer)))
+            game = Game.objects.get(pk=pk)
+            # game = Game.objects.get(pk=pk).aggregate(even_count=Count('event'))
+            # game = Game.objects.annotate(user_event_count=Count('event', filter=Q(event__host=gamer)))
             serializer = SingleGameSerializer(game, context={'request': request})
             return Response(serializer.data)
+        except Game.DoesNotExist as ex:
+            return Response({'message': ex.args[0]}, status=status.HTTP_404_NOT_FOUND)
+
         except Exception as ex:
             return HttpResponseServerError(ex)
 
